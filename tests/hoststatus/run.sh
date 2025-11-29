@@ -10,8 +10,16 @@ set -e
 trap "docker rm -f caddy-e2e whoami1-e2e whoami2-e2e api-e2e >/dev/null 2>&1 || true" EXIT
 
 {
-  # Build local test image
-  docker build -t caddy-docker-proxy:local -f Dockerfile.test ../.. &&
+  # Ensure HostView template is available in artifacts for the test image
+  TEMPLATE_DIR=../../artifacts/hostview
+  TEMPLATE_FILE="$TEMPLATE_DIR/hostview.html"
+  if [ ! -f "$TEMPLATE_FILE" ]; then
+    mkdir -p "$TEMPLATE_DIR"
+    cp ../../hostview/hostview.html "$TEMPLATE_FILE"
+  fi
+
+  # Build local test image (layer hostview template on top of caddy-docker-proxy:local)
+  docker build -t caddy-docker-proxy:local -f Dockerfile.test ../../artifacts &&
 
   # Start caddy with host status enabled
   docker run -d --name caddy-e2e \
