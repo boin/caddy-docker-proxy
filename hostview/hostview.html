@@ -216,7 +216,7 @@
         <h2 class="group-title">${g.letter}</h2>
         <div class="host-grid">
           ${g.hosts.map(h => `
-            <div class="host-card" onclick="showDetail('${h.host.replace(/'/g, "\\'")}')">
+            <div class="host-card" data-host="${escapeHtml(h.host)}" onclick="showDetail(this.dataset.host)">
               <strong>${escapeHtml(h.host)}</strong>
               <div class="meta">
                 <span class="badge">${h.routes.length} 路由</span>
