@@ -39,15 +39,15 @@ trap "docker rm -f caddy-e2e whoami1-e2e whoami2-e2e api-e2e >/dev/null 2>&1 || 
     traefik/whoami &&
 
   # Wait for caddy to pick up containers and host status server to be ready
-  retry curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/caddy/hosts | grep 200 >/dev/null &&
+  retry bash -lc 'curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/caddy/hosts | grep -q 200' &&
 
   # Verify HTML page contains expected title
-  retry curl -s http://localhost:8080/caddy/hosts | grep "Caddy 主机列表" >/dev/null &&
+  retry bash -lc 'curl -s http://localhost:8080/caddy/hosts | grep -q "Caddy 主机列表"' &&
 
   # Verify JSON data contains all expected hosts
-  retry curl -s http://localhost:8080/caddy/hosts/data | grep '"whoami1.localhost"' >/dev/null &&
-  retry curl -s http://localhost:8080/caddy/hosts/data | grep '"whoami2.localhost"' >/dev/null &&
-  retry curl -s http://localhost:8080/caddy/hosts/data | grep '"api.localhost"' >/dev/null
+  retry bash -lc 'curl -s http://localhost:8080/caddy/hosts/data | grep -q "\"whoami1.localhost\""' &&
+  retry bash -lc 'curl -s http://localhost:8080/caddy/hosts/data | grep -q "\"whoami2.localhost\""' &&
+  retry bash -lc 'curl -s http://localhost:8080/caddy/hosts/data | grep -q "\"api.localhost\""'
 
 } || {
   echo "Test failed"
