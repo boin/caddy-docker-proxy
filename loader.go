@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -22,6 +23,7 @@ import (
 	"github.com/lucaslorentz/caddy-docker-proxy/v2/config"
 	"github.com/lucaslorentz/caddy-docker-proxy/v2/docker"
 	"github.com/lucaslorentz/caddy-docker-proxy/v2/generator"
+	"github.com/lucaslorentz/caddy-docker-proxy/v2/hostview"
 	"github.com/lucaslorentz/caddy-docker-proxy/v2/utils"
 
 	"go.uber.org/zap"
@@ -166,6 +168,11 @@ func (dockerLoader *DockerLoader) Start() error {
 		dockerLoader.update()
 	})
 	close(ready)
+
+	// Start host status server if configured
+	if dockerLoader.options.HostStatusURL != "" {
+		go dockerLoader.startHostStatusServer(log)
+	}
 
 	go dockerLoader.monitorEvents()
 
@@ -356,4 +363,54 @@ func addAdminListen(configJSON []byte, listen string) ([]byte, error) {
 		Listen: listen,
 	}
 	return json.Marshal(config)
+}
+
+// startHostStatusServer starts the host status HTTP server
+func (dockerLoader *DockerLoader) startHostStatusServer(log *zap.Logger) {
+	urlPath := dockerLoader.options.HostStatusURL
+	templatePath := dockerLoader.options.HostStatusTemplate
+
+	// Normalize URL path
+	if !strings.HasPrefix(urlPath, "/") {
+		urlPath = "/" + urlPath
+	}
+	urlPath = strings.TrimSuffix(urlPath, "/")
+
+	// Create handler
+	var handler http.Handler
+	if templatePath != "" {
+		// Use external template file
+		handler = hostview.NewHandler(templatePath, func() []byte {
+			return dockerLoader.lastJSONConfig
+		})
+		log.Info("Host status page enabled with external template",
+			zap.String("url", urlPath),
+			zap.String("template", templatePath),
+		)
+	} else {
+		// Use default embedded template
+		handler = hostview.ServeDefaultTemplate(func() []byte {
+			return dockerLoader.lastJSONConfig
+		})
+		log.Info("Host status page enabled with default template",
+			zap.String("url", urlPath),
+		)
+	}
+
+	// Create HTTP mux
+	mux := http.NewServeMux()
+	mux.Handle(urlPath, handler)
+	mux.Handle(urlPath+"/", handler)
+	mux.Handle(urlPath+"/data", handler)
+
+	// Start server on port 8080 (separate from Caddy)
+	addr := ":8080"
+	if envAddr := os.Getenv("CADDY_DOCKER_HOST_STATUS_ADDR"); envAddr != "" {
+		addr = envAddr
+	}
+
+	log.Info("Starting host status server", zap.String("addr", addr))
+	if err := http.ListenAndServe(addr, mux); err != nil {
+		log.Error("Host status server failed", zap.Error(err))
+	}
 }

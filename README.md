@@ -40,6 +40,7 @@ Every time a Docker object changes, the plugin updates the Caddyfile and trigger
     + [Custom images](#custom-images)
   * [Connecting to Docker Host](#connecting-to-docker-host)
   * [Volumes](#volumes)
+  * [Host Status Page](#host-status-page)
   * [Trying it](#trying-it)
     + [With docker-compose file](#with-docker-compose-file)
     + [With run commands](#with-run-commands)
@@ -546,6 +547,49 @@ CADDY_DOCKER_NO_SCOPE=<bool, default scope used>
 ```
 
 Check **examples** folder to see how to set them on a Docker Compose file.
+
+## Host Status Page
+
+This fork adds a built-in host status page that displays all configured hosts and their routes in a web UI.
+
+### Configuration
+
+Enable the host status page by setting the following environment variables:
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `CADDY_DOCKER_HOST_STATUS_URL` | URL path for the status page (leave empty to disable) | `/caddy/hosts` |
+| `CADDY_DOCKER_HOST_STATUS_TEMPLATE` | Path to custom HTML template (optional) | `/etc/caddy/hostview.html` |
+| `CADDY_DOCKER_HOST_STATUS_ADDR` | Listen address for status server (default: `:8080`) | `:9090` |
+
+### Usage Example
+
+```yaml
+services:
+  caddy:
+    image: registry.ttd/caddy-docker-proxy:latest
+    ports:
+      - 80:80
+      - 443:443
+      - 8080:8080  # Host status page
+    environment:
+      - CADDY_DOCKER_HOST_STATUS_URL=/caddy/hosts
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+```
+
+### Endpoints
+
+- `GET /caddy/hosts` - HTML page showing all hosts
+- `GET /caddy/hosts/data` - JSON API returning host list
+
+### Features
+
+- Real-time host discovery from Docker labels
+- Search and filter hosts
+- View route details (reverse proxy, upstreams, etc.)
+- Dark theme UI
+- No external dependencies (pure HTML/CSS/JS)
 
 ## Docker images
 Docker images are available at Docker hub:

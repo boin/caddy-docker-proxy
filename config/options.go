@@ -23,6 +23,8 @@ type Options struct {
 	Secret                 string
 	ControllerNetwork      *net.IPNet
 	IngressNetworks        []string
+	HostStatusURL          string // URL path for host status page, e.g. /caddy/hosts. Leave empty to disable.
+	HostStatusTemplate     string // Path to host status HTML template file
 }
 
 // Mode represents how this instance should run

@@ -1,2 +1,11 @@
 *
 !artifacts
+!hostview
+!config
+!generator
+!docker
+!caddyfile
+!utils
+!*.go
+!go.mod
+!go.sum

@@ -1,0 +1,35 @@
+# Test Dockerfile for building caddy-docker-proxy with host status feature
+FROM golang:1.24-alpine AS builder
+
+ENV GOTOOLCHAIN=auto
+
+RUN apk add --no-cache git
+
+WORKDIR /src
+
+# Install xcaddy
+RUN go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
+
+# Copy source code
+COPY . .
+
+# Build caddy with docker-proxy plugin
+RUN CGO_ENABLED=0 xcaddy build \
+    --output /caddy \
+    --with github.com/lucaslorentz/caddy-docker-proxy/v2=/src
+
+# Final image
+FROM alpine:3.20
+
+RUN apk add --no-cache ca-certificates curl
+
+EXPOSE 80 443 2019 8080
+
+ENV XDG_CONFIG_HOME=/config
+ENV XDG_DATA_HOME=/data
+
+COPY --from=builder /caddy /bin/caddy
+COPY hostview/hostview.html /etc/caddy/hostview.html
+
+ENTRYPOINT ["/bin/caddy"]
+CMD ["docker-proxy"]

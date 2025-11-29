@@ -70,6 +70,12 @@ func init() {
 			fs.Duration("event-throttle-interval", 100*time.Millisecond,
 				"Interval to throttle caddyfile updates triggered by docker events")
 
+			fs.String("host-status-url", "",
+				"URL path for host status page, e.g. /caddy/hosts. Leave empty to disable.")
+
+			fs.String("host-status-template", "",
+				"Path to host status HTML template file")
+
 			return fs
 		}(),
 	})
@@ -157,6 +163,8 @@ func createOptions(flags caddycmd.Flags) *config.Options {
 	dockerCertsPathFlag := flags.String("docker-certs-path")
 	dockerAPIsVersionFlag := flags.String("docker-apis-version")
 	ingressNetworksFlag := flags.String("ingress-networks")
+	hostStatusURLFlag := flags.String("host-status-url")
+	hostStatusTemplateFlag := flags.String("host-status-template")
 
 	options := &config.Options{}
 
@@ -276,6 +284,18 @@ func createOptions(flags caddycmd.Flags) *config.Options {
 		}
 	} else {
 		options.EventThrottleInterval = eventThrottleIntervalFlag
+	}
+
+	if hostStatusURLEnv := os.Getenv("CADDY_DOCKER_HOST_STATUS_URL"); hostStatusURLEnv != "" {
+		options.HostStatusURL = hostStatusURLEnv
+	} else {
+		options.HostStatusURL = hostStatusURLFlag
+	}
+
+	if hostStatusTemplateEnv := os.Getenv("CADDY_DOCKER_HOST_STATUS_TEMPLATE"); hostStatusTemplateEnv != "" {
+		options.HostStatusTemplate = hostStatusTemplateEnv
+	} else {
+		options.HostStatusTemplate = hostStatusTemplateFlag
 	}
 
 	return options
