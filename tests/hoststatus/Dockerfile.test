@@ -1,0 +1,8 @@
+## Test Dockerfile for host status feature
+##
+## Build context: artifacts/
+## Base image: caddy-docker-proxy:local (built via run-docker-tests-linux.sh)
+
+FROM caddy-docker-proxy:local
+
+COPY hostview/hostview.html /etc/caddy/hostview.html
